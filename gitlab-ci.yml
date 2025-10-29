@@ -1,0 +1,85 @@
+stages:
+  - setup
+  - test
+  - deploy_batch
+  - deploy_streaming
+
+variables:
+  PROJECT_ID: "your-gcp-project"
+  REGION: "us-central1"
+  CLUSTER: "your-dataproc-cluster"
+  SERVICE_KEY_FILE: "key.json"
+
+before_script:
+  # Install Python & GCP SDK
+  - apt-get update && apt-get install -y curl python3-pip git
+  - pip3 install --upgrade pip
+  - pip3 install -r requirements.txt
+  - curl https://sdk.cloud.google.com | bash > /dev/null
+  - source $HOME/google-cloud-sdk/path.bash.inc
+
+  # Authenticate GCP
+  - echo "$GCP_SERVICE_ACCOUNT_KEY" > $SERVICE_KEY_FILE
+  - export GOOGLE_APPLICATION_CREDENTIALS=$SERVICE_KEY_FILE
+  - gcloud auth activate-service-account --key-file=$SERVICE_KEY_FILE
+  - gcloud config set project $PROJECT_ID
+
+# --------------------------
+# Setup stage
+# --------------------------
+setup:
+  stage: setup
+  script:
+    - echo "✅ Setup complete"
+    - git clone https://github.com/<your-org>/coincap-etl.git .
+  tags:
+    - docker
+
+# --------------------------
+# Test stage
+# --------------------------
+test:
+  stage: test
+  script:
+    - echo "🔹 Running unit tests"
+    - pytest tests/
+  tags:
+    - docker
+  allow_failure: true
+
+# --------------------------
+# Batch deployment
+# --------------------------
+deploy_batch:
+  stage: deploy_batch
+  script:
+    - echo "🚀 Deploying batch ETL pipeline to Dataproc"
+    - gcloud dataproc jobs submit pyspark batch/batch_assets_to_bq.py \
+        --cluster $CLUSTER \
+        --region $REGION \
+        --project $PROJECT_ID \
+        --properties spark.jars.packages=com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.30.0
+  only:
+    - main
+  tags:
+    - docker
+
+# --------------------------
+# Streaming deployment
+# --------------------------
+deploy_streaming:
+  stage: deploy_streaming
+  script:
+    - echo "🚀 Deploying streaming ETL pipeline to Dataproc (background)"
+    - (
+        gcloud dataproc jobs submit pyspark streaming/stream_assets_to_bq.py \
+        --cluster $CLUSTER \
+        --region $REGION \
+        --project $PROJECT_ID \
+        --properties spark.jars.packages=com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.30.0
+      ) &
+  only:
+    - main
+  tags:
+    - docker
+

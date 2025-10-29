@@ -1,0 +1,26 @@
+# --- Core Google Cloud Libraries ---
+google-cloud-pubsub==2.23.0
+google-cloud-storage==2.18.2
+google-cloud-bigquery==3.27.0
+
+# --- Spark & Hadoop ---
+pyspark==4.0.1                  # Matches Spark 4.0.1 installation
+protobuf==4.25.5                # Compatible with PySpark 4.x
+
+# --- Data Processing & Transformation ---
+pandas==2.2.3
+pyarrow==17.0.0
+numpy==1.26.4
+
+# --- Optional: Database or API Extraction ---
+requests==2.32.3                 # For SaaS API calls (Salesforce, HubSpot, etc.)
+mysql-connector-python==9.1.0    # For MySQL integration
+psycopg2-binary==2.9.10          # For PostgreSQL integration
+
+# --- Logging & Utilities ---
+python-dotenv==1.0.1
+loguru==0.7.2
+
+# --- Optional for JSON/YAML configs ---
+PyYAML==6.0.2
+
